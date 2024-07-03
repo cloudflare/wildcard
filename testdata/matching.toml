@@ -1,0 +1,1472 @@
+# Wildcard matching tests. Some of these tests are original and others are taken from:
+#
+# 1. http://developforperformance.com/MatchingWildcards_AnImprovedAlgorithmForBigData.html
+# 2. The wildmatch crate.
+#
+
+[[test]]
+pattern = 'foo*bar'
+input   = 'foobarbar'
+matches = true
+
+[[test]]
+pattern = 'a*b'
+input   = 'a*xb'
+matches = true
+
+[[test]]
+pattern = 'foobar***************'
+input   = 'foobar'
+matches = true
+
+[[test]]
+pattern = 'foobar'
+input   = 'foo'
+matches = false
+
+[[test]]
+pattern = 'aaazz*'
+input   = 'aaazz'
+matches = true
+
+[[test]]
+pattern = 'aaazzz'
+input   = 'aaazz'
+matches = false
+
+[[test]]
+pattern = '*k'
+input   = 'aa'
+matches = false
+
+[[test]]
+pattern = '*a'
+input   = 'aak'
+matches = false
+
+[[test]]
+pattern = 'Hi*'
+input   = 'Hi'
+matches = true
+
+[[test]]
+pattern = 'ab*d'
+input   = 'abc'
+matches = false
+
+[[test]]
+pattern = '*ccd'
+input   = 'abcccd'
+matches = true
+
+[[test]]
+pattern = '*issip*ss*'
+input   = 'mississipissippi'
+matches = true
+
+[[test]]
+pattern = 'xxxx*zzy*fffff'
+input   = 'xxxx*zzzzzzzzy*f'
+matches = false
+
+[[test]]
+pattern = 'xxx*zzy*f'
+input   = 'xxxx*zzzzzzzzy*f'
+matches = true
+
+[[test]]
+pattern = 'xxxx*zzy*fffff'
+input   = 'xxxxzzzzzzzzyf'
+matches = false
+
+[[test]]
+pattern = 'xxxx*zzy*f'
+input   = 'xxxxzzzzzzzzyf'
+matches = true
+
+[[test]]
+pattern = 'xy*z*xyz'
+input   = 'xyxyxyzyxyz'
+matches = true
+
+[[test]]
+pattern = '*sip*'
+input   = 'mississippi'
+matches = true
+
+[[test]]
+pattern = 'xy*xyz'
+input   = 'xyxyxyxyz'
+matches = true
+
+[[test]]
+pattern = 'mi*sip*'
+input   = 'mississippi'
+matches = true
+
+[[test]]
+pattern = '*abac*'
+input   = 'ababac'
+matches = true
+
+[[test]]
+pattern = '*abac*'
+input   = 'ababac'
+matches = true
+
+[[test]]
+pattern = 'a*zz*'
+input   = 'aaazz'
+matches = true
+
+[[test]]
+pattern = '*12*23'
+input   = 'a12b12'
+matches = false
+
+[[test]]
+pattern = 'a12b'
+input   = 'a12b12'
+matches = false
+
+[[test]]
+pattern = '*12*12*'
+input   = 'a12b12'
+matches = true
+
+[[test]]
+pattern = '*'
+input   = '*'
+matches = true
+
+[[test]]
+pattern = 'a*b'
+input   = 'a*abab'
+matches = true
+
+[[test]]
+pattern = 'a*'
+input   = 'a*r'
+matches = true
+
+[[test]]
+pattern = 'a*aar'
+input   = 'a*ar'
+matches = false
+
+[[test]]
+pattern = 'XY*Z*XYz'
+input   = 'XYXYXYZYXYz'
+matches = true
+
+[[test]]
+pattern = '*SIP*'
+input   = 'missisSIPpi'
+matches = true
+
+[[test]]
+pattern = '*issip*PI'
+input   = 'mississipPI'
+matches = true
+
+[[test]]
+pattern = 'xy*xyz'
+input   = 'xyxyxyxyz'
+matches = true
+
+[[test]]
+pattern = 'mi*sip*'
+input   = 'miSsissippi'
+matches = true
+
+[[test]]
+pattern = 'mi*Sip*'
+input   = 'miSsissippi'
+matches = false
+
+[[test]]
+pattern = '*Abac*'
+input   = 'abAbac'
+matches = true
+
+[[test]]
+pattern = '*Abac*'
+input   = 'abAbac'
+matches = true
+
+[[test]]
+pattern = 'a*zz*'
+input   = 'aAazz'
+matches = true
+
+[[test]]
+pattern = '*12*23'
+input   = 'A12b12'
+matches = false
+
+[[test]]
+pattern = '*12*12*'
+input   = 'a12B12'
+matches = true
+
+[[test]]
+pattern = '*oWn*'
+input   = 'oWn'
+matches = true
+
+[[test]]
+pattern = 'bLah'
+input   = 'bLah'
+matches = true
+
+[[test]]
+pattern = 'bLaH'
+input   = 'bLah'
+matches = false
+
+[[test]]
+pattern = '*aabbaa*a*'
+input   = 'aaabbaabbaab'
+matches = true
+
+[[test]]
+pattern = '***a*b*c***'
+input   = '*abc*'
+matches = true
+
+[[test]]
+pattern = '*issip*pi'
+input   = 'mississippi'
+matches = true
+
+[[test]]
+pattern = ''
+input   = ''
+matches = true
+
+[[test]]
+pattern = ''
+input   = 'a'
+matches = false
+
+[[test]]
+pattern = 'abd'
+input   = 'abc'
+matches = false
+
+[[test]]
+pattern = 'abcccd'
+input   = 'abcccd'
+matches = true
+
+[[test]]
+pattern = 'mississipissippi'
+input   = 'mississipissippi'
+matches = true
+
+[[test]]
+pattern = 'xxxxzzzzzzzzyfffff'
+input   = 'xxxxzzzzzzzzyf'
+matches = false
+
+[[test]]
+pattern = 'xxxxzzzzzzzzyf'
+input   = 'xxxxzzzzzzzzyf'
+matches = true
+
+[[test]]
+pattern = 'xxxxzzy.fffff'
+input   = 'xxxxzzzzzzzzyf'
+matches = false
+
+[[test]]
+pattern = 'xxxxzzzzzzzzyf'
+input   = 'xxxxzzzzzzzzyf'
+matches = true
+
+[[test]]
+pattern = 'xyxyxyzyxyz'
+input   = 'xyxyxyzyxyz'
+matches = true
+
+[[test]]
+pattern = 'mississippi'
+input   = 'mississippi'
+matches = true
+
+[[test]]
+pattern = 'xyxyxyxyz'
+input   = 'xyxyxyxyz'
+matches = true
+
+[[test]]
+pattern = 'm ississippi'
+input   = 'm ississippi'
+matches = true
+
+[[test]]
+pattern = 'ababac'
+input   = 'dababac'
+matches = false
+
+[[test]]
+pattern = 'aaazz'
+input   = 'aaazz'
+matches = true
+
+[[test]]
+pattern = '1212'
+input   = 'a12b12'
+matches = false
+
+[[test]]
+pattern = 'a12b'
+input   = 'a12b12'
+matches = false
+
+[[test]]
+pattern = 'a12b12'
+input   = 'a12b12'
+matches = true
+
+[[test]]
+pattern = 'n'
+input   = 'n'
+matches = true
+
+[[test]]
+pattern = 'aabab'
+input   = 'aabab'
+matches = true
+
+[[test]]
+pattern = 'ar'
+input   = 'ar'
+matches = true
+
+[[test]]
+pattern = 'aaar'
+input   = 'aar'
+matches = false
+
+[[test]]
+pattern = 'XYXYXYZYXYz'
+input   = 'XYXYXYZYXYz'
+matches = true
+
+[[test]]
+pattern = 'missisSIPpi'
+input   = 'missisSIPpi'
+matches = true
+
+[[test]]
+pattern = 'mississipPI'
+input   = 'mississipPI'
+matches = true
+
+[[test]]
+pattern = 'xyxyxyxyz'
+input   = 'xyxyxyxyz'
+matches = true
+
+[[test]]
+pattern = 'miSsissippi'
+input   = 'miSsissippi'
+matches = true
+
+[[test]]
+pattern = 'miSsisSippi'
+input   = 'miSsissippi'
+matches = false
+
+[[test]]
+pattern = 'abAbac'
+input   = 'abAbac'
+matches = true
+
+[[test]]
+pattern = 'abAbac'
+input   = 'abAbac'
+matches = true
+
+[[test]]
+pattern = 'aAazz'
+input   = 'aAazz'
+matches = true
+
+[[test]]
+pattern = 'A12b123'
+input   = 'A12b12'
+matches = false
+
+[[test]]
+pattern = 'a12B12'
+input   = 'a12B12'
+matches = true
+
+[[test]]
+pattern = 'oWn'
+input   = 'oWn'
+matches = true
+
+[[test]]
+pattern = 'bLah'
+input   = 'bLah'
+matches = true
+
+[[test]]
+pattern = 'bLaH'
+input   = 'bLah'
+matches = false
+
+[[test]]
+pattern = 'a'
+input   = 'a'
+matches = true
+
+[[test]]
+pattern = 'aaabbaabbaab'
+input   = 'aaabbaabbaab'
+matches = true
+
+[[test]]
+pattern = 'abd'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'abcccd'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'mississipissippi'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'xxxxzzzzzzzzyfffff'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'xxxxzzzzzzzzyf'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'xxxxzzy.fffff'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'xxxxzzzzzzzzyf'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'xyxyxyzyxyz'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'mississippi'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'xyxyxyxyz'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'm ississippi'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'ababac*'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'ababac'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'aaazz'
+input   = ''
+matches = false
+
+[[test]]
+pattern = '1212'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'a12b'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'a12b12'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'n'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'aabab'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'ar'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'aaar'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'XYXYXYZYXYz'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'missisSIPpi'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'mississipPI'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'xyxyxyxyz'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'miSsissippi'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'miSsisSippi'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'abAbac'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'abAbac'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'aAazz'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'A12b123'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'a12B12'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'oWn'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'bLah'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'bLaH'
+input   = ''
+matches = false
+
+[[test]]
+pattern = ''
+input   = ''
+matches = true
+
+[[test]]
+pattern = ''
+input   = 'abc'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'abcccd'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'mississipissippi'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'xxxxzzzzzzzzyf'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'xxxxzzzzzzzzyf'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'xxxxzzzzzzzzyf'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'xxxxzzzzzzzzyf'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'xyxyxyzyxyz'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'mississippi'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'xyxyxyxyz'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'm ississippi'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'ababac'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'dababac'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'aaazz'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'a12b12'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'a12b12'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'a12b12'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'n'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'aabab'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'ar'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'aar'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'XYXYXYZYXYz'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'missisSIPpi'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'mississipPI'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'xyxyxyxyz'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'miSsissippi'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'miSsissippi'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'abAbac'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'abAbac'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'aAazz'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'A12b12'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'a12B12'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'oWn'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'bLah'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'bLah'
+matches = false
+
+[[test]]
+pattern = '**'
+input   = 'cat'
+matches = true
+
+[[test]]
+pattern = '*'
+input   = 'cat'
+matches = true
+
+[[test]]
+pattern = 'c*'
+input   = 'cat'
+matches = true
+
+[[test]]
+pattern = 'cat'
+input   = 'cat'
+matches = true
+
+[[test]]
+pattern = '*cat'
+input   = 'cat'
+matches = true
+
+[[test]]
+pattern = 'cat*'
+input   = 'cat'
+matches = true
+
+[[test]]
+pattern = '*d*'
+input   = 'cat'
+matches = false
+
+[[test]]
+pattern = '*d'
+input   = 'cat'
+matches = false
+
+[[test]]
+pattern = 'd*'
+input   = 'cat'
+matches = false
+
+[[test]]
+pattern = '*c'
+input   = 'cat'
+matches = false
+
+[[test]]
+pattern = 'cats'
+input   = 'cat'
+matches = false
+
+[[test]]
+pattern = 'cacat'
+input   = 'cat'
+matches = false
+
+[[test]]
+pattern = 'cat*dog'
+input   = 'cat'
+matches = false
+
+[[test]]
+pattern = '1'
+input   = ''
+matches = false
+
+[[test]]
+pattern = '*12'
+input   = '122'
+matches = false
+
+[[test]]
+pattern = 'cat*'
+input   = 'wildcats'
+matches = false
+
+[[test]]
+pattern = '*x*'
+input   = 'wildcats'
+matches = false
+
+[[test]]
+pattern = '*a'
+input   = 'wildcats'
+matches = false
+
+[[test]]
+pattern = ''
+input   = 'wildcats'
+matches = false
+
+[[test]]
+pattern = ' '
+input   = 'wildcats'
+matches = false
+
+[[test]]
+pattern = ' '
+input   = "\n"
+matches = false
+
+[[test]]
+pattern = ' '
+input   = "\t"
+matches = false
+
+[[test]]
+pattern = '*'
+input   = ''
+matches = true
+
+[[test]]
+pattern = '*'
+input   = '1'
+matches = true
+
+[[test]]
+pattern = '*121'
+input   = '12121'
+matches = true
+
+[[test]]
+pattern = '*113'
+input   = '1113'
+matches = true
+
+[[test]]
+pattern = '*113'
+input   = '113'
+matches = true
+
+[[test]]
+pattern = '*113'
+input   = '11113'
+matches = true
+
+[[test]]
+pattern = '*113'
+input   = '111113'
+matches = true
+
+[[test]]
+pattern = '*cat*'
+input   = 'd&(*og_cat_dog'
+matches = true
+
+[[test]]
+pattern = '*a*'
+input   = 'd&(*og_cat_dog'
+matches = true
+
+[[test]]
+pattern = 'a*b'
+input   = 'a*xb'
+matches = true
+
+[[test]]
+pattern = '*'
+input   = '*'
+matches = true
+
+[[test]]
+pattern = 'wildcats'
+input   = 'wildcats'
+matches = true
+
+[[test]]
+pattern = 'wi*ca*s'
+input   = 'wildcats'
+matches = true
+
+[[test]]
+pattern = '*at_dog'
+input   = 'cat_dog'
+matches = true
+
+[[test]]
+pattern = ' '
+input   = ' '
+matches = true
+
+[[test]]
+pattern = '* '
+input   = "\n "
+matches = true
+
+[[test]]
+pattern = "\n"
+input   = "\n"
+matches = true
+
+[[test]]
+pattern = '*32'
+input   = '432'
+matches = true
+
+[[test]]
+pattern = '*32'
+input   = '332'
+matches = true
+
+[[test]]
+pattern = '*332'
+input   = '332'
+matches = true
+
+[[test]]
+pattern = '*32'
+input   = '32'
+matches = true
+
+[[test]]
+pattern = '*32'
+input   = '3232'
+matches = true
+
+[[test]]
+pattern = '*32'
+input   = '3232332'
+matches = true
+
+[[test]]
+pattern = '33*'
+input   = '333'
+matches = true
+
+[[test]]
+pattern = 'da*da*da*'
+input   = 'daaadabadmanda'
+matches = true
+
+[[test]]
+pattern = '* '
+input   = ' '
+matches = true
+
+[[test]]
+pattern = ' *'
+input   = ' '
+matches = true
+
+[[test]]
+pattern = 'da*?a*d?*'
+input   = 'daaadabadmanda'
+matches = true
+
+[[test]]
+pattern = '*a?b'
+input   = 'caaab'
+matches = true
+
+[[test]]
+pattern = '*?'
+input   = 'a'
+matches = true
+
+[[test]]
+pattern = '*?'
+input   = 'ab'
+matches = true
+
+[[test]]
+pattern = '*?'
+input   = 'abc'
+matches = true
+
+[[test]]
+pattern = '??'
+input   = 'a'
+matches = false
+
+[[test]]
+pattern = '?*?'
+input   = 'ab'
+matches = true
+
+[[test]]
+pattern = '*?*?*'
+input   = 'ab'
+matches = true
+
+[[test]]
+pattern = '?**?*?'
+input   = 'abc'
+matches = true
+
+[[test]]
+pattern = '?**?*&?'
+input   = 'abc'
+matches = false
+
+[[test]]
+pattern = '?b*??'
+input   = 'abcd'
+matches = true
+
+[[test]]
+pattern = '?a*??'
+input   = 'abcd'
+matches = false
+
+[[test]]
+pattern = '?**?c?'
+input   = 'abcd'
+matches = true
+
+[[test]]
+pattern = '?**?d?'
+input   = 'abcd'
+matches = false
+
+[[test]]
+pattern = '?*b*?*d*?'
+input   = 'abcde'
+matches = true
+
+[[test]]
+pattern = 'bL?h'
+input   = 'bLah'
+matches = true
+
+[[test]]
+pattern = 'bLa?'
+input   = 'bLaaa'
+matches = false
+
+[[test]]
+pattern = 'bLa?'
+input   = 'bLah'
+matches = true
+
+[[test]]
+pattern = '?Lah'
+input   = 'bLaH'
+matches = false
+
+[[test]]
+pattern = '?LaH'
+input   = 'bLaH'
+matches = true
+
+[[test]]
+pattern = '?'
+input   = ''
+matches = false
+
+[[test]]
+pattern = '*?'
+input   = ''
+matches = false
+
+[[test]]
+pattern = 'ababac?'
+input   = 'ababac'
+matches = false
+
+[[test]]
+pattern = 'a'
+input   = 'a'
+matches = true
+
+[[test]]
+pattern = 'a?'
+input   = 'ab'
+matches = true
+
+[[test]]
+pattern = 'ab?'
+input   = 'abc'
+matches = true
+
+[[test]]
+pattern = '??'
+input   = 'a'
+matches = false
+
+[[test]]
+pattern = '??'
+input   = 'ab'
+matches = true
+
+[[test]]
+pattern = '???'
+input   = 'abc'
+matches = true
+
+[[test]]
+pattern = '????'
+input   = 'abcd'
+matches = true
+
+[[test]]
+pattern = '????'
+input   = 'abc'
+matches = false
+
+[[test]]
+pattern = '?b??'
+input   = 'abcd'
+matches = true
+
+[[test]]
+pattern = '?a??'
+input   = 'abcd'
+matches = false
+
+[[test]]
+pattern = '??c?'
+input   = 'abcd'
+matches = true
+
+[[test]]
+pattern = '??d?'
+input   = 'abcd'
+matches = false
+
+[[test]]
+pattern = '?b?d*?'
+input   = 'abcde'
+matches = true
+
+[[test]]
+pattern = 'abcabc?abcabcabc'
+input   = 'abcabcdabcdabcabcd'
+matches = false
+
+[[test]]
+pattern = 'abcabc?abc?abcabc?abc?abc?bc?abc?bc?bcd'
+input   = 'abcabcdabcdabcabcdabcdabcabcdabcabcabcd'
+matches = true
+
+[[test]]
+pattern = '?abc?'
+input   = '?abc?'
+matches = true
+
+[[test]]
+pattern = '*?*'
+input   = 'cat'
+matches = true
+
+[[test]]
+pattern = 'c?*'
+input   = 'cat'
+matches = true
+
+[[test]]
+pattern = '???'
+input   = 'cat'
+matches = true
+
+[[test]]
+pattern = 'c?t'
+input   = 'cat'
+matches = true
+
+[[test]]
+pattern = '?'
+input   = 'cat'
+matches = false
+
+[[test]]
+pattern = '??'
+input   = 'cat'
+matches = false
+
+[[test]]
+pattern = '????'
+input   = 'cat'
+matches = false
+
+[[test]]
+pattern = '?????'
+input   = 'cat'
+matches = false
+
+[[test]]
+pattern = '*????'
+input   = 'cat'
+matches = false
+
+[[test]]
+pattern = 'cat?'
+input   = 'cat'
+matches = false
+
+[[test]]
+pattern = '?'
+input   = ''
+matches = false
+
+[[test]]
+pattern = '?'
+input   = '11'
+matches = false
+
+[[test]]
+pattern = '*1?'
+input   = '123'
+matches = false
+
+[[test]]
+pattern = 'cat?'
+input   = 'wildcats'
+matches = false
+
+[[test]]
+pattern = '???'
+input   = 'wildcats'
+matches = false
+
+[[test]]
+pattern = '?'
+input   = '1'
+matches = true
+
+[[test]]
+pattern = '?*3'
+input   = '111333'
+matches = true
+
+[[test]]
+pattern = '*???a'
+input   = 'bbbba'
+matches = true
+
+[[test]]
+pattern = '*???a'
+input   = 'bbbbba'
+matches = true
+
+[[test]]
+pattern = '*???a'
+input   = 'bbbbbba'
+matches = true
+
+[[test]]
+pattern = '*o?a*'
+input   = 'foobar'
+matches = true
+
+[[test]]
+pattern = '*ooo?ar'
+input   = 'foooobar'
+matches = true
+
+[[test]]
+pattern = '*o?a*r'
+input   = 'foobar'
+matches = true
+
+[[test]]
+pattern = '*?*'
+input   = 'd&(*og_cat_dog'
+matches = true
+
+[[test]]
+pattern = '*'
+input   = '?'
+matches = true
+
+[[test]]
+pattern = '?'
+input   = '?'
+matches = true
+
+[[test]]
+pattern = 'wild*cats'
+input   = 'wild?cats'
+matches = true
+
+[[test]]
+pattern = 'wi*ca?s'
+input   = 'wildcats'
+matches = true
+
+[[test]]
+pattern = '*o?'
+input   = 'hog_cat_dog'
+matches = true
+
+[[test]]
+pattern = '*o?'
+input   = 'cat_dog'
+matches = true
+
+[[test]]
+pattern = '*?2'
+input   = '332'
+matches = true
+
+[[test]]
+pattern = '*?2'
+input   = '3332'
+matches = true
+
+[[test]]
+pattern = '*?'
+input   = 'xx'
+matches = true
+
+[[test]]
+pattern  = '\\'
+input    = '\'
+matches = true
+
+[[test]]
+pattern  = '\?'
+input    = '.'
+matches = false
+
+[[test]]
+pattern  = '\?'
+input    = '?'
+matches = true
+
+[[test]]
+pattern  = '\*'
+input    = '.'
+matches = false
+
+[[test]]
+pattern  = '\*'
+input    = '*'
+matches = true
+
+[[test]]
+pattern  = '\?\\\*'
+input    = '?\*'
+matches = true
+
+[[test]]
+pattern  = '\?\\\*'
+input    = '.\*'
+matches = false
+
+[[test]]
+pattern  = '\?\\\*'
+input    = '?\'
+matches = false
+
+[[test]]
+pattern  = '*\?foo'
+input    = 'abc?foo'
+matches = true
+
+[[test]]
+pattern  = '*\*foo'
+input    = 'abc*foo'
+matches = true
+
+[[test]]
+pattern  = '*\\foo'
+input    = 'abc\foo'
+matches = true
+
+[[test]]
+pattern  = '*\?foo'
+input    = 'abcXfoo'
+matches = false
+
+[[test]]
+pattern  = 'a'
+input    = 'A'
+matches = false
+
+[[test]]
+pattern  = 'A'
+input    = 'a'
+matches = true
+case-insensitive = true
+
+[[test]]
+pattern = 'a*B*?c'
+input   = 'ADbxC'
+matches = true
+case-insensitive = true
+
+[[test]]
+pattern = ''
+input   = '\n'
+matches = false

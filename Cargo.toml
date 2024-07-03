@@ -1,0 +1,87 @@
+[package]
+name = "wildcard"
+description = "Wildcard matching"
+version = "0.1.0-pre"
+authors = ["Diogo Sousa <dsousa@cloudflare.com>"]
+
+edition = "2021"
+rust-version = "1.62.0"
+
+homepage = "https://github.com/cloudflare/wildcard"
+repository = "https://github.com/cloudflare/wildcard"
+documentation = "https://docs.rs/wildcard"
+readme = "README.md"
+
+keywords = [
+    "wildcard",
+    "matching",
+]
+
+categories = [
+    "text-processing",
+    "algorithms",
+]
+
+license = "Apache-2.0"
+
+# What to include when packaging.
+include = [
+    "/src/**/*.rs",
+    "/benches/**/*.rs",
+    "/testdata/**/*.toml",
+    "/Cargo.toml",
+    "/README.md",
+    "/LICENSE",
+    "/release-notes.md",
+]
+
+[dependencies]
+thiserror = "1.0.61"
+
+[dev-dependencies]
+criterion = "0.5.1"
+regex = "1.10.4"
+wildmatch = "2.3.4"
+toml = "0.8.14"
+serde = "1.0.203"
+quickcheck = "1.0.3"
+quickcheck_macros = "1.0.0"
+
+[features]
+fatal-warnings = []
+
+[lib]
+# Disable libtest benchmarks so we can use criterion flags (see https://bheisler.github.io/criterion.rs/book/faq.html
+# and https://github.com/rust-lang/rust/issues/47241).
+bench = false
+
+[[bench]]
+name = "benchmark"
+harness = false
+path = "benches/benchmark.rs"
+
+[lints.rust]
+missing-docs = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+correctness = { level = "deny", priority = 1 }
+
+explicit-deref-methods = "allow"
+if-not-else = "allow"
+inline-always = "allow"
+match-bool = "allow"
+missing-errors-doc = "allow"
+missing-safety-doc = "allow"
+module-name-repetitions = "allow"
+partialeq-ne-impl = "allow"
+similar-names = "allow"
+single-match-else = "allow"
+use-self = "allow"
+wildcard-imports = "allow"
+
+[lints.rustdoc]
+# TODO This is only needed because `cargo-rdme` requires a path like `crate::⋯`. Once that limitation is lifted we
+#      can remove this.
+redundant-explicit-links = "allow"

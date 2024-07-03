@@ -1,0 +1,45 @@
+[package]
+name = "wildcard-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4.7"
+wildcard = { path = ".." }
+regex = "1.10.5"
+
+[profile.release]
+debug = true
+debug-assertions = true
+
+[[bin]]
+name = "fuzz_is_match"
+path = "fuzz_targets/fuzz_is_match.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_captures"
+path = "fuzz_targets/fuzz_captures.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_is_match_equivalent_to_regex"
+path = "fuzz_targets/fuzz_is_match_equivalent_to_regex.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_captures_equivalent_to_regex"
+path = "fuzz_targets/fuzz_captures_equivalent_to_regex.rs"
+test = false
+doc = false
+bench = false

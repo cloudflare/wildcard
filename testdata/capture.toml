@@ -1,0 +1,100 @@
+[[test]]
+pattern = '*abac*'
+input   = 'ababac'
+captures = ["ab", ""]
+
+[[test]]
+pattern = '*ab*ac*'
+input   = 'AbabacxY'
+captures = ["Ab", "", "xY"]
+
+[[test]]
+pattern = 'foobar'
+input   = 'foobar'
+captures = []
+
+[[test]]
+pattern = '*/*'
+input   = 'foo/bar'
+captures = ["foo", "bar"]
+
+[[test]]
+pattern = '*/*/*'
+input   = 'foo/bar/mumble'
+captures = ["foo", "bar", "mumble"]
+
+[[test]]
+pattern = '*/*/*'
+input   = 'foo/bar/mumble/baz'
+captures = ["foo", "bar", "mumble/baz"]
+
+[[test]]
+pattern = 'foobar*'
+input   = 'foobarx'
+captures = ["x"]
+
+[[test]]
+pattern = 'foobar**'
+input   = 'foobarxx'
+captures = ["", "xx"]
+
+[[test]]
+pattern = '*foobar'
+input   = 'xfoobar'
+captures = ["x"]
+
+[[test]]
+pattern = '**foobar'
+input   = 'xxfoobar'
+captures = ["", "xx"]
+
+[[test]]
+pattern  = 'foo**bar'
+input    = 'foobarbar'
+captures = ["", "bar"]
+
+[[test]]
+pattern  = 'foo**'
+input    = 'foobar'
+captures = ["", "bar"]
+
+[[test]]
+pattern  = '*foo*foo*'
+input    = 'foofoofoofoo'
+captures = ["", "", "foofoo"]
+
+[[test]]
+pattern  = '?a?'
+input    = 'bab'
+captures = ["b", "b",]
+
+[[test]]
+pattern  = 'f?*'
+input    = 'fa!'
+captures = ["a", "!"]
+
+[[test]]
+pattern  = 'f?*?'
+input    = 'fa!!b'
+captures = ["a", "!!", "b"]
+
+[[test]]
+pattern  = '\\'
+input    = '\'
+captures = []
+
+[[test]]
+pattern  = '?a\?b*\\c*'
+input    = 'Za?byYy\cbaz'
+captures = ["Z", "yYy", "baz"]
+
+[[test]]
+pattern  = '?a\?b*\\c*'
+input    = 'ZA?byYy\CBaz'
+captures = ["Z", "yYy", "Baz"]
+case-insensitive = true
+
+[[test]]
+pattern  = '\\?\*?\\'
+input    = '\a*e\'
+captures = ["a", "e"]

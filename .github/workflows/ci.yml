@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 19 * * 3'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Install rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, rust-src
+
+      - name: Install cargo plugins
+        run: |
+          cargo install cargo-rdme
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check everything
+        run: bash ./tools/check.sh
+
+  msrv:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo plugins
+        run: cargo install cargo-msrv
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check the minimum supported rust version
+        run: cargo msrv verify
