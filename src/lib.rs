@@ -56,11 +56,7 @@
 //! 1. Configure the symbols for the metasymbols `*` and `?` as well as the escape symbol.
 //! 2. Support for the metasymbol `?` can be disabled.
 //! 3. Support for escaping can be disabled.
-//! 4. Support for case-insensitive matching (ASCII-only as `wildcard` operates on bytes).
-//!
-//! # Limitations
-//!
-//! Currently, we only support byte-oriented matching.
+//! 4. Support for case-insensitive matching.
 
 use std::borrow::Cow;
 use std::fmt::Debug;
@@ -77,7 +73,7 @@ pub enum WildcardError {
         /// First position of the error in the wildcard.
         position: usize,
         /// Description of the error.
-        message: String,
+        message: &'static str,
     },
     /// The wildcard matching not configured correctly, as it contains repeated special symbols
     /// (either the metasymbols or the escape symbol).
@@ -85,15 +81,56 @@ pub enum WildcardError {
     InvalidSpecialSymbolsConfiguration,
 }
 
+/// This trait defined the alphabet a wildcard can be used on.
+pub trait WildcardSymbol: Eq + Copy {
+    /// Default metasymbol that matches on sequences of arbitrary length.
+    ///
+    /// This is typically `*`.
+    const DEFAULT_METASYMBOL_ANY: Self;
+    /// Default metasymbol that matches on a single symbol.
+    ///
+    /// This is typically `?`.
+    const DEFAULT_METASYMBOL_ONE: Self;
+    /// Default metasymbol used for escaping.
+    ///
+    /// This is typically `\`.
+    const DEFAULT_METASYMBOL_ESCAPE: Self;
+
+    /// Checks equality in a case-insensitive way.
+    fn eq_case_insensitive(a: Self, b: Self) -> bool;
+}
+
+impl WildcardSymbol for u8 {
+    const DEFAULT_METASYMBOL_ANY: u8 = b'*';
+    const DEFAULT_METASYMBOL_ONE: u8 = b'?';
+    const DEFAULT_METASYMBOL_ESCAPE: u8 = b'\\';
+
+    fn eq_case_insensitive(a: u8, b: u8) -> bool {
+        a.eq_ignore_ascii_case(&b)
+    }
+}
+
+impl WildcardSymbol for char {
+    const DEFAULT_METASYMBOL_ANY: char = '*';
+    const DEFAULT_METASYMBOL_ONE: char = '?';
+    const DEFAULT_METASYMBOL_ESCAPE: char = '\\';
+
+    fn eq_case_insensitive(a: char, b: char) -> bool {
+        a.to_lowercase().eq(b.to_lowercase())
+    }
+}
 #[derive(Clone)]
-struct WildcardMatchingConfig {
-    metasymbol_any: u8,
-    metasymbol_one: Option<u8>,
-    symbol_escape: Option<u8>,
+struct WildcardMatchingConfig<S> {
+    metasymbol_any: S,
+    metasymbol_one: Option<S>,
+    symbol_escape: Option<S>,
     case_insensitive: bool,
 }
 
-impl WildcardMatchingConfig {
+impl<S> WildcardMatchingConfig<S>
+where
+    S: WildcardSymbol,
+{
     fn validate(&self) -> Result<(), WildcardError> {
         // Special symbols cannot be the same.
         let has_special_symbol_repetitions = is_symbol(self.metasymbol_any, self.metasymbol_one)
@@ -106,12 +143,15 @@ impl WildcardMatchingConfig {
     }
 }
 
-impl Default for WildcardMatchingConfig {
+impl<S> Default for WildcardMatchingConfig<S>
+where
+    S: WildcardSymbol,
+{
     fn default() -> Self {
         WildcardMatchingConfig {
-            metasymbol_any: b'*',
-            metasymbol_one: Some(b'?'),
-            symbol_escape: Some(b'\\'),
+            metasymbol_any: S::DEFAULT_METASYMBOL_ANY,
+            metasymbol_one: Some(S::DEFAULT_METASYMBOL_ONE),
+            symbol_escape: Some(S::DEFAULT_METASYMBOL_ESCAPE),
             case_insensitive: false,
         }
     }
@@ -119,67 +159,73 @@ impl Default for WildcardMatchingConfig {
 
 /// A builder of a [`Wildcard`]. This allows you to configure specific behavior of the wildcard
 /// matching.
-pub struct WildcardBuilder<'a> {
-    pattern: Cow<'a, [u8]>,
-    config: WildcardMatchingConfig,
+pub struct WildcardBuilder<'a, S = u8>
+where
+    S: WildcardSymbol,
+{
+    pattern: Cow<'a, [S]>,
+    config: WildcardMatchingConfig<S>,
 }
 
-impl<'a> WildcardBuilder<'a> {
+impl<'a, S> WildcardBuilder<'a, S>
+where
+    S: WildcardSymbol,
+{
     /// Creates a wildcard builder.
     #[must_use]
-    pub fn new(pattern: &'a [u8]) -> WildcardBuilder<'a> {
+    pub fn new(pattern: &'a [S]) -> WildcardBuilder<'a, S> {
         WildcardBuilder::from_cow(Cow::Borrowed(pattern))
     }
 
     /// Creates a wildcard builder.
     #[must_use]
-    pub fn from_owned(pattern: Vec<u8>) -> WildcardBuilder<'static> {
+    pub fn from_owned(pattern: Vec<S>) -> WildcardBuilder<'static, S> {
         WildcardBuilder::from_cow(Cow::Owned(pattern))
     }
 
     /// Creates a wildcard builder.
     #[must_use]
-    pub fn from_cow(pattern: Cow<'a, [u8]>) -> WildcardBuilder<'a> {
+    pub fn from_cow(pattern: Cow<'a, [S]>) -> WildcardBuilder<'a, S> {
         WildcardBuilder { pattern, config: WildcardMatchingConfig::default() }
     }
 
-    /// Configures the metasymbol use to match on sequences of arbitrary length.
+    /// Configures the metasymbol used to match on sequences of arbitrary length.
     ///
-    /// Normally this is `*`.
+    /// This is typically `*`.
     #[must_use]
-    pub fn with_any_metasymbol(mut self, s: u8) -> WildcardBuilder<'a> {
+    pub fn with_any_metasymbol(mut self, s: S) -> WildcardBuilder<'a, S> {
         self.config.metasymbol_any = s;
         self
     }
 
-    /// Configures the metasymbol use to match on a single symbol.
+    /// Configures the metasymbol used to match on a single symbol.
     ///
-    /// Normally this is `?`.
+    /// This is typically `?`.
     #[must_use]
-    pub fn with_one_metasymbol(mut self, s: u8) -> WildcardBuilder<'a> {
+    pub fn with_one_metasymbol(mut self, s: S) -> WildcardBuilder<'a, S> {
         self.config.metasymbol_one = Some(s);
         self
     }
 
     /// Disable the metasymbol use to match on a single symbol.
     #[must_use]
-    pub fn without_one_metasymbol(mut self) -> WildcardBuilder<'a> {
+    pub fn without_one_metasymbol(mut self) -> WildcardBuilder<'a, S> {
         self.config.metasymbol_one = None;
         self
     }
 
     /// Configures the symbol use to use for escaping.
     ///
-    /// Normally this is `\`.
+    /// This is typically `\`.
     #[must_use]
-    pub fn with_escape_symbol(mut self, s: u8) -> WildcardBuilder<'a> {
+    pub fn with_escape_symbol(mut self, s: S) -> WildcardBuilder<'a, S> {
         self.config.symbol_escape = Some(s);
         self
     }
 
     /// Disables escaping.
     #[must_use]
-    pub fn without_escape(mut self) -> WildcardBuilder<'a> {
+    pub fn without_escape(mut self) -> WildcardBuilder<'a, S> {
         self.config.symbol_escape = None;
         self
     }
@@ -188,29 +234,29 @@ impl<'a> WildcardBuilder<'a> {
     ///
     /// Note that special symbols are always matched verbatim.
     #[must_use]
-    pub fn case_insensitive(mut self, on: bool) -> WildcardBuilder<'a> {
+    pub fn case_insensitive(mut self, on: bool) -> WildcardBuilder<'a, S> {
         self.config.case_insensitive = on;
         self
     }
 
     /// Builds the wildcard.
-    pub fn build(self) -> Result<Wildcard<'a>, WildcardError> {
+    pub fn build(self) -> Result<Wildcard<'a, S>, WildcardError> {
         Wildcard::new_with_config(self.pattern, self.config)
     }
 }
 
 /// A token of a wildcard.
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
-pub enum WildcardToken {
+pub enum WildcardToken<S = u8> {
     /// Metasymbol that matches any sequence of symbols.
     MetasymbolAny,
     /// Metasymbol that matches a single symbol.
     MetasymbolOne,
     /// A literal symbol.
-    Symbol(u8),
+    Symbol(S),
 }
 
-impl WildcardToken {
+impl<S> WildcardToken<S> {
     /// Whether the token represents a metasymbol.
     #[must_use]
     pub fn is_metasymbol(self) -> bool {
@@ -231,32 +277,38 @@ impl WildcardToken {
 /// assert!(wildcard.is_match("fooofooobar".as_bytes()));
 /// ```
 #[derive(Clone)]
-pub struct Wildcard<'a> {
-    pattern: Cow<'a, [u8]>,
-    config: WildcardMatchingConfig,
+pub struct Wildcard<'a, S = u8>
+where
+    S: WildcardSymbol,
+{
+    pattern: Cow<'a, [S]>,
+    config: WildcardMatchingConfig<S>,
     metasymbol_count: usize,
 }
 
-impl<'a> Wildcard<'a> {
+impl<'a, S> Wildcard<'a, S>
+where
+    S: WildcardSymbol,
+{
     /// Creates a wildcard.
-    pub fn new(pattern: &'a [u8]) -> Result<Wildcard<'a>, WildcardError> {
+    pub fn new(pattern: &'a [S]) -> Result<Wildcard<'a, S>, WildcardError> {
         Wildcard::new_with_config(Cow::Borrowed(pattern), WildcardMatchingConfig::default())
     }
 
     /// Creates a wildcard.
-    pub fn from_owned(pattern: Vec<u8>) -> Result<Wildcard<'static>, WildcardError> {
+    pub fn from_owned(pattern: Vec<S>) -> Result<Wildcard<'static, S>, WildcardError> {
         Wildcard::new_with_config(Cow::Owned(pattern), WildcardMatchingConfig::default())
     }
 
     /// Creates a wildcard.
-    pub fn from_cow(pattern: Cow<'a, [u8]>) -> Result<Wildcard<'a>, WildcardError> {
+    pub fn from_cow(pattern: Cow<'a, [S]>) -> Result<Wildcard<'a, S>, WildcardError> {
         Wildcard::new_with_config(pattern, WildcardMatchingConfig::default())
     }
 
     fn new_with_config(
-        pattern: Cow<'a, [u8]>,
-        config: WildcardMatchingConfig,
-    ) -> Result<Wildcard<'a>, WildcardError> {
+        pattern: Cow<'a, [S]>,
+        config: WildcardMatchingConfig<S>,
+    ) -> Result<Wildcard<'a, S>, WildcardError> {
         config.validate()?;
 
         let metasymbol_count = validate_syntax(&pattern, &config)?;
@@ -268,7 +320,7 @@ impl<'a> Wildcard<'a> {
     /// Checks if `input` matches the wildcard.
     #[inline]
     #[must_use]
-    pub fn is_match(&self, input: &[u8]) -> bool {
+    pub fn is_match(&self, input: &[S]) -> bool {
         // Note that we want to have two different calls with different closures for each case so
         // each "version" of `matches()` can be properly optimized after monomorphization.
         match self.config.case_insensitive {
@@ -276,7 +328,7 @@ impl<'a> Wildcard<'a> {
                 &self.config,
                 &self.pattern,
                 input,
-                |a, b| a.eq_ignore_ascii_case(&b),
+                WildcardSymbol::eq_case_insensitive,
                 |_| (),
             ),
             false => matches(&self.config, &self.pattern, input, |a, b| a == b, |_| ()),
@@ -299,7 +351,7 @@ impl<'a> Wildcard<'a> {
     /// The captures are done in a lazy way: earlier captures will be as small as possible.
     #[inline]
     #[must_use]
-    pub fn captures<'b>(&self, input: &'b [u8]) -> Option<Vec<&'b [u8]>> {
+    pub fn captures<'b>(&self, input: &'b [S]) -> Option<Vec<&'b [S]>> {
         let mut captures = Vec::with_capacity(self.metasymbol_count);
 
         let is_match = {
@@ -312,7 +364,7 @@ impl<'a> Wildcard<'a> {
                     &self.config,
                     &self.pattern,
                     input,
-                    |a, b| a.eq_ignore_ascii_case(&b),
+                    WildcardSymbol::eq_case_insensitive,
                     capture,
                 ),
                 false => matches(&self.config, &self.pattern, input, |a, b| a == b, capture),
@@ -344,7 +396,7 @@ impl<'a> Wildcard<'a> {
 
     /// The original pattern from which this wildcard was created.
     #[must_use]
-    pub fn pattern(&self) -> &[u8] {
+    pub fn pattern(&self) -> &[S] {
         self.pattern.as_ref()
     }
 
@@ -356,7 +408,7 @@ impl<'a> Wildcard<'a> {
     }
 
     /// Parse the wildcard into tokens.
-    pub fn parsed(&self) -> impl Iterator<Item = WildcardToken> + '_ {
+    pub fn parsed(&self) -> impl Iterator<Item = WildcardToken<S>> + '_ {
         let mut i = 0;
 
         std::iter::from_fn(move || {
@@ -385,19 +437,14 @@ impl<'a> Wildcard<'a> {
     }
 }
 
-impl Debug for Wildcard<'_> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-        let as_str: String = self.pattern.iter().map(|b| char::from(*b)).collect();
-
-        f.debug_tuple("Wildcard").field(&as_str).finish()
-    }
-}
-
 /// Validates the syntax of the wildcard. Returns the number of metasymbols in the pattern.
-fn validate_syntax(
-    pattern: &[u8],
-    config: &WildcardMatchingConfig,
-) -> Result<usize, WildcardError> {
+fn validate_syntax<S>(
+    pattern: &[S],
+    config: &WildcardMatchingConfig<S>,
+) -> Result<usize, WildcardError>
+where
+    S: Eq + Copy,
+{
     // This function is somewhat performance-sensitive. Any changes to this function should be
     // validated by running the benchmarks against the baseline.
 
@@ -420,14 +467,9 @@ fn validate_syntax(
                 && !is_symbol(symbol, metasymbol_one)
                 && !is_symbol(symbol, symbol_escape)
             {
-                let escape_symbol = symbol_escape.expect("escape symbol must be present here");
                 return Err(WildcardError::Syntax {
                     position: i - 1,
-                    message: format!(
-                        "invalid escape sequence {}{}",
-                        char::from(escape_symbol),
-                        char::from(symbol),
-                    ),
+                    message: "invalid escape sequence",
                 });
             }
 
@@ -444,7 +486,7 @@ fn validate_syntax(
     if escape {
         return Err(WildcardError::Syntax {
             position: pattern_len - 1,
-            message: "incomplete escape sequence at the end of the wildcard".to_owned(),
+            message: "incomplete escape sequence at the end of the wildcard",
         });
     }
 
@@ -454,14 +496,16 @@ fn validate_syntax(
 /// This function fills in the captures of `?` based on the captures of `*`. This needs to be done
 /// because [`matches()`] does not emit captures of `?`. Read the documentation of [`matches()`] to
 /// understand why.
-fn fill_in_metasymbol_one_captures<'a>(
-    metasymbol_any: u8,
-    metasymbol_one: u8,
-    symbol_escape: Option<u8>,
-    pattern: &[u8],
-    input: &'a [u8],
-    captures: &mut Vec<&'a [u8]>,
-) {
+fn fill_in_metasymbol_one_captures<'a, S>(
+    metasymbol_any: S,
+    metasymbol_one: S,
+    symbol_escape: Option<S>,
+    pattern: &[S],
+    input: &'a [S],
+    captures: &mut Vec<&'a [S]>,
+) where
+    S: Eq + Copy,
+{
     // This function is somewhat performance-sensitive. Any changes to this function should be
     // validated by running the benchmarks against the baseline.
 
@@ -498,7 +542,10 @@ fn fill_in_metasymbol_one_captures<'a>(
 }
 
 #[inline(always)]
-fn is_symbol(v: u8, opt_symbol: Option<u8>) -> bool {
+fn is_symbol<S>(v: S, opt_symbol: Option<S>) -> bool
+where
+    S: Eq + Copy,
+{
     match opt_symbol {
         None => false,
         Some(u) => u == v,
@@ -521,13 +568,16 @@ fn is_symbol(v: u8, opt_symbol: Option<u8>) -> bool {
 /// [kurt2016]: http://dodobyte.com/wildcard.html
 /// [krauss2014]: http://developforperformance.com/MatchingWildcards_AnImprovedAlgorithmForBigData.html
 #[inline]
-fn matches(
-    config: &WildcardMatchingConfig,
-    pattern: &[u8],
-    input: &[u8],
-    symbol_eq: impl Fn(u8, u8) -> bool,
+fn matches<S>(
+    config: &WildcardMatchingConfig<S>,
+    pattern: &[S],
+    input: &[S],
+    symbol_eq: impl Fn(S, S) -> bool,
     mut capture: impl FnMut(Range<usize>),
-) -> bool {
+) -> bool
+where
+    S: Eq + Copy,
+{
     // This function is very performance-sensitive. Any changes to this function should be validated
     // by running the benchmarks against the baseline.
 
@@ -594,7 +644,7 @@ fn matches(
 
                 let pattern_symbol = pattern[pattern_index];
 
-                debug_assert_ne!(pattern_symbol, metasymbol_any);
+                debug_assert!(pattern_symbol != metasymbol_any);
 
                 last_star_input_index = input_index;
 
@@ -640,7 +690,7 @@ fn matches(
 
             let pattern_symbol = pattern[revert_pattern_index];
 
-            debug_assert_ne!(pattern_symbol, metasymbol_any);
+            debug_assert!(pattern_symbol != metasymbol_any);
 
             // Advance to the next possible match.
             if !is_symbol(pattern_symbol, metasymbol_one)
@@ -911,25 +961,19 @@ mod tests {
     #[test]
     fn test_syntax_validation() {
         let pattern = r"\foo";
-        let expected = WildcardError::Syntax {
-            position: 0,
-            message: r"invalid escape sequence \f".to_owned(),
-        };
+        let expected = WildcardError::Syntax { position: 0, message: r"invalid escape sequence" };
 
         assert_eq!(Wildcard::new(pattern.as_bytes()).err(), Some(expected));
 
         let pattern = r"f\oo";
-        let expected = WildcardError::Syntax {
-            position: 1,
-            message: r"invalid escape sequence \o".to_owned(),
-        };
+        let expected = WildcardError::Syntax { position: 1, message: r"invalid escape sequence" };
 
         assert_eq!(Wildcard::new(pattern.as_bytes()).err(), Some(expected));
 
         let pattern = r"foo\";
         let expected = WildcardError::Syntax {
             position: 3,
-            message: "incomplete escape sequence at the end of the wildcard".to_owned(),
+            message: "incomplete escape sequence at the end of the wildcard",
         };
 
         assert_eq!(Wildcard::new(pattern.as_bytes()).err(), Some(expected));
@@ -937,25 +981,19 @@ mod tests {
         let pattern = r"foo\\\";
         let expected = WildcardError::Syntax {
             position: 5,
-            message: "incomplete escape sequence at the end of the wildcard".to_owned(),
+            message: "incomplete escape sequence at the end of the wildcard",
         };
 
         assert_eq!(Wildcard::new(pattern.as_bytes()).err(), Some(expected));
 
         let pattern = r"f\?oo";
-        let expected = WildcardError::Syntax {
-            position: 1,
-            message: r"invalid escape sequence \?".to_owned(),
-        };
+        let expected = WildcardError::Syntax { position: 1, message: r"invalid escape sequence" };
         let wildcard = WildcardBuilder::new(pattern.as_bytes()).without_one_metasymbol().build();
 
         assert_eq!(wildcard.err(), Some(expected));
 
         let pattern = r"f\?oo";
-        let expected = WildcardError::Syntax {
-            position: 1,
-            message: r"invalid escape sequence \?".to_owned(),
-        };
+        let expected = WildcardError::Syntax { position: 1, message: r"invalid escape sequence" };
         let wildcard = WildcardBuilder::new(pattern.as_bytes()).with_one_metasymbol(b'!').build();
 
         assert_eq!(wildcard.err(), Some(expected));
@@ -1045,22 +1083,42 @@ mod tests {
     }
 
     #[test]
-    fn test_wildcard_format_debug() {
-        let wildcard = Wildcard::new(r"abAB !zZ+,~".as_bytes()).unwrap();
+    fn test_matching_chars() {
+        let pattern = "a*c".chars().collect::<Vec<char>>();
+        let wildcard = Wildcard::new(&pattern).expect("invalid wildcard");
 
-        assert_eq!(format!("{wildcard:?}"), r#"Wildcard("abAB !zZ+,~")"#);
+        assert!(wildcard.is_match(&['a', 'c']));
+        assert!(!wildcard.is_match(&['a', 'b']));
+        assert!(wildcard.is_match(&['a', 'b', 'c']));
+        assert!(wildcard.is_match(&['a', 'b', 'b', 'c']));
+    }
 
-        let wildcard = Wildcard::new(r#"'""#.as_bytes()).unwrap();
+    #[test]
+    fn test_matching_chars_case_insensitive() {
+        let pattern = "ω*δ".chars().collect::<Vec<char>>();
+        let wildcard = WildcardBuilder::new(&pattern)
+            .case_insensitive(true)
+            .build()
+            .expect("invalid wildcard");
 
-        assert_eq!(format!("{wildcard:?}"), r#"Wildcard("'\"")"#);
+        assert!(wildcard.is_match(&['ω', 'Δ']));
+        assert!(!wildcard.is_match(&['ω', 'x']));
+        assert!(wildcard.is_match(&['Ω', 'x', 'δ']));
+        assert!(wildcard.is_match(&['ω', 'x', 'x', 'Δ']));
+    }
 
-        let wildcard = Wildcard::new(r"?\?*\*".as_bytes()).unwrap();
+    #[test]
+    fn test_capture_chars_case_insensitive() {
+        let pattern = "ω*δ".chars().collect::<Vec<char>>();
+        let wildcard = WildcardBuilder::new(&pattern)
+            .case_insensitive(true)
+            .build()
+            .expect("invalid wildcard");
 
-        assert_eq!(format!("{wildcard:?}"), r#"Wildcard("?\\?*\\*")"#);
-
-        let wildcard = Wildcard::new(&[0x09, 0x0a, 0x0d, 0x00, 0xff]).unwrap();
-
-        assert_eq!(format!("{wildcard:?}"), r#"Wildcard("\t\n\r\0ÿ")"#);
+        assert_eq!(wildcard.captures(&['ω', 'Δ']), Some(vec![&[] as &[char]]));
+        assert_eq!(wildcard.captures(&['ω', 'x']), None);
+        assert_eq!(wildcard.captures(&['Ω', 'x', 'X', 'Δ']), Some(vec![&['x', 'X'] as &[char]]));
+        assert_eq!(wildcard.captures(&['ω', 'ω', 'Ω', 'Δ']), Some(vec![&['ω', 'Ω'] as &[char]]));
     }
 
     #[derive(Clone, Debug)]
