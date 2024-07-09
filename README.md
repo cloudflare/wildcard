@@ -46,10 +46,6 @@ With `wildcard` you can configure these properties of a wildcard:
 1. Configure the symbols for the metasymbols `*` and `?` as well as the escape symbol.
 2. Support for the metasymbol `?` can be disabled.
 3. Support for escaping can be disabled.
-4. Support for case-insensitive matching (ASCII-only as `wildcard` operates on bytes).
-
-## Limitations
-
-Currently, we only support byte-oriented matching.
+4. Support for case-insensitive matching.
 
 <!-- cargo-rdme end -->
