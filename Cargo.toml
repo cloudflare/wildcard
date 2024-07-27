@@ -40,7 +40,7 @@ thiserror = "1.0.61"
 
 [dev-dependencies]
 criterion = "0.5.1"
-regex = "1.10.4"
+regex = "1.10.5"
 wildmatch = "2.3.4"
 toml = "0.8.14"
 serde = "1.0.203"

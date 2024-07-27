@@ -17,6 +17,7 @@
 #![allow(clippy::missing_panics_doc)]
 
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
+use std::time::Duration;
 
 mod engine_wildmatch {
     use wildmatch::WildMatch;
@@ -128,7 +129,7 @@ fn make_testcase_input(len: usize) -> String {
     input
 }
 
-fn benchmark_comparison_matches_bytes(c: &mut Criterion) {
+fn benchmark_comparison_matches_bytes_backtrack_heavy(c: &mut Criterion) {
     const PATTERN: &str = "fooo*fooo*fooo*fooo*fooo*baar";
     const SIZES: &[usize] = &[1, 2, 4, 8, 16, 32, 64, 128];
 
@@ -139,7 +140,7 @@ fn benchmark_comparison_matches_bytes(c: &mut Criterion) {
         ));
     }
 
-    let mut group = c.benchmark_group("comparison_matches_bytes");
+    let mut group = c.benchmark_group("comparison_matches_bytes_backtrack_heavy");
 
     group.sample_size(1000);
 
@@ -182,7 +183,7 @@ fn benchmark_comparison_matches_bytes(c: &mut Criterion) {
     group.finish();
 }
 
-fn benchmark_wildcard_matches_bytes(c: &mut Criterion) {
+fn benchmark_wildcard_matches_bytes_backtrack_heavy(c: &mut Criterion) {
     const PATTERN: &str = "fooo*fooo*fooo*fooo*fooo*baar";
     const SIZES: &[usize] = &[1, 2, 4, 8, 16, 32, 64, 128];
 
@@ -193,7 +194,7 @@ fn benchmark_wildcard_matches_bytes(c: &mut Criterion) {
         ));
     }
 
-    let mut group = c.benchmark_group("wildcard_matches_bytes");
+    let mut group = c.benchmark_group("wildcard_matches_bytes_backtrack_heavy");
 
     group.sample_size(1000);
 
@@ -216,7 +217,7 @@ fn benchmark_wildcard_matches_bytes(c: &mut Criterion) {
     group.finish();
 }
 
-fn benchmark_comparison_captures_bytes(c: &mut Criterion) {
+fn benchmark_comparison_captures_bytes_backtrack_heavy(c: &mut Criterion) {
     const PATTERN: &str = "fooo*fooo*fooo*fooo*fooo*baar";
     const SIZES: &[usize] = &[1, 2, 4, 8, 16, 32, 64, 128];
 
@@ -227,7 +228,7 @@ fn benchmark_comparison_captures_bytes(c: &mut Criterion) {
         ));
     }
 
-    let mut group = c.benchmark_group("comparison_captures_bytes");
+    let mut group = c.benchmark_group("comparison_captures_bytes_backtrack_heavy");
 
     group.sample_size(1000);
 
@@ -260,7 +261,7 @@ fn benchmark_comparison_captures_bytes(c: &mut Criterion) {
     group.finish();
 }
 
-fn benchmark_wildcard_captures_bytes(c: &mut Criterion) {
+fn benchmark_wildcard_captures_bytes_backtrack_heavy(c: &mut Criterion) {
     const PATTERN: &str = "fooo*fooo*fooo*fooo*fooo*baar";
     const SIZES: &[usize] = &[1, 2, 4, 8, 16, 32, 64, 128];
 
@@ -271,7 +272,7 @@ fn benchmark_wildcard_captures_bytes(c: &mut Criterion) {
         ));
     }
 
-    let mut group = c.benchmark_group("wildcard_captures_bytes");
+    let mut group = c.benchmark_group("wildcard_captures_bytes_backtrack_heavy");
 
     group.sample_size(1000);
 
@@ -294,11 +295,263 @@ fn benchmark_wildcard_captures_bytes(c: &mut Criterion) {
     group.finish();
 }
 
+#[derive(serde::Deserialize)]
+struct Inputs {
+    #[serde(rename = "match")]
+    match_: Vec<String>,
+    no_match: Vec<String>,
+}
+
+#[derive(serde::Deserialize)]
+struct Benchmark {
+    pattern: String,
+    inputs: Inputs,
+}
+
+#[derive(serde::Deserialize)]
+struct Benchmarks {
+    benchmarks: Vec<Benchmark>,
+}
+
+const BENCHDATA_SIZES: &[usize] = &[1, 2, 4, 8, 16, 32, 64, 128];
+
+fn read_benchmark(size_kib: usize) -> Benchmarks {
+    let benches =
+        std::fs::read_to_string(format!("benches/benchdata/benchmarks_{}k.toml", size_kib))
+            .expect("failed to read benchmark data");
+
+    toml::from_str(&benches).expect("failed to parse benchmark file")
+}
+
+fn benchmark_benchdata_comparison_matches(c: &mut Criterion) {
+    let mut group = c.benchmark_group("benchdata_comparison_matches");
+
+    group.sample_size(100);
+    group.measurement_time(Duration::from_secs(300));
+
+    for &size_kib in BENCHDATA_SIZES {
+        let benchmarks = read_benchmark(size_kib);
+
+        let throughput = benchmarks
+            .benchmarks
+            .iter()
+            .flat_map(|b| b.inputs.match_.iter().chain(&b.inputs.no_match))
+            .map(|input| input.len() as u64)
+            .sum();
+
+        group.throughput(Throughput::Bytes(throughput));
+
+        group.bench_with_input("regex", &size_kib, |b, _| {
+            b.iter(|| {
+                for benchmark in &benchmarks.benchmarks {
+                    let pattern = &benchmark.pattern;
+
+                    for input in benchmark.inputs.match_.iter().chain(&benchmark.inputs.no_match) {
+                        criterion::black_box(engine_regex_bytes::matches(
+                            &pattern,
+                            input.as_bytes(),
+                        ));
+                    }
+                }
+            });
+        });
+
+        let regexes_compiled: Vec<_> =
+            benchmarks.benchmarks.iter().map(|b| engine_regex_bytes::compile(&b.pattern)).collect();
+
+        group.bench_with_input("regex (pre-compiled)", &size_kib, |b, _| {
+            b.iter(|| {
+                for (benchmark, regex_compiled) in
+                    benchmarks.benchmarks.iter().zip(&regexes_compiled)
+                {
+                    for input in
+                        benchmark.inputs.match_.iter().chain(benchmark.inputs.no_match.iter())
+                    {
+                        criterion::black_box(engine_regex_bytes::matches_compiled(
+                            &regex_compiled,
+                            input.as_bytes(),
+                        ));
+                    }
+                }
+            });
+        });
+
+        group.bench_with_input("wildmatch", &size_kib, |b, _| {
+            b.iter(|| {
+                for benchmark in &benchmarks.benchmarks {
+                    let pattern = &benchmark.pattern;
+
+                    for input in benchmark.inputs.match_.iter().chain(&benchmark.inputs.no_match) {
+                        criterion::black_box(engine_wildmatch::matches(&pattern, input));
+                    }
+                }
+            });
+        });
+
+        let wildmatchs_compiled: Vec<_> =
+            benchmarks.benchmarks.iter().map(|b| engine_wildmatch::compile(&b.pattern)).collect();
+
+        group.bench_with_input("wildmatch (pre-compiled)", &size_kib, |b, _| {
+            b.iter(|| {
+                for (benchmark, wildmatch_compiled) in
+                    benchmarks.benchmarks.iter().zip(&wildmatchs_compiled)
+                {
+                    for input in
+                        benchmark.inputs.match_.iter().chain(benchmark.inputs.no_match.iter())
+                    {
+                        criterion::black_box(engine_wildmatch::matches_compiled(
+                            &wildmatch_compiled,
+                            input,
+                        ));
+                    }
+                }
+            });
+        });
+
+        group.bench_with_input("wildcard", &size_kib, |b, _| {
+            b.iter(|| {
+                for benchmark in &benchmarks.benchmarks {
+                    let pattern = &benchmark.pattern;
+
+                    for input in benchmark.inputs.match_.iter().chain(&benchmark.inputs.no_match) {
+                        criterion::black_box(engine_wildcard::matches(
+                            pattern.as_bytes(),
+                            input.as_bytes(),
+                        ));
+                    }
+                }
+            });
+        });
+
+        let wildcards_compiled: Vec<_> = benchmarks
+            .benchmarks
+            .iter()
+            .map(|b| engine_wildcard::compile(b.pattern.as_bytes()))
+            .collect();
+
+        group.bench_with_input("wildcard (pre-compiled)", &size_kib, |b, _| {
+            b.iter(|| {
+                for (benchmark, wildcard_compiled) in
+                    benchmarks.benchmarks.iter().zip(&wildcards_compiled)
+                {
+                    for input in
+                        benchmark.inputs.match_.iter().chain(benchmark.inputs.no_match.iter())
+                    {
+                        criterion::black_box(engine_wildcard::matches_compiled(
+                            &wildcard_compiled,
+                            input.as_bytes(),
+                        ));
+                    }
+                }
+            });
+        });
+    }
+
+    group.finish();
+}
+
+fn benchmark_benchdata_comparison_captures(c: &mut Criterion) {
+    let mut group = c.benchmark_group("benchdata_comparison_captures");
+
+    group.sample_size(100);
+    group.measurement_time(Duration::from_secs(300));
+
+    for &size_kib in BENCHDATA_SIZES {
+        let benchmarks = read_benchmark(size_kib);
+
+        let throughput = benchmarks
+            .benchmarks
+            .iter()
+            .flat_map(|b| b.inputs.match_.iter().chain(&b.inputs.no_match))
+            .map(|input| input.len() as u64)
+            .sum();
+
+        group.throughput(Throughput::Bytes(throughput));
+
+        group.bench_with_input("regex", &size_kib, |b, _| {
+            b.iter(|| {
+                for benchmark in &benchmarks.benchmarks {
+                    let pattern = &benchmark.pattern;
+
+                    for input in benchmark.inputs.match_.iter().chain(&benchmark.inputs.no_match) {
+                        criterion::black_box(engine_regex_bytes::captures(
+                            &pattern,
+                            input.as_bytes(),
+                        ));
+                    }
+                }
+            });
+        });
+
+        let regexes_compiled: Vec<_> =
+            benchmarks.benchmarks.iter().map(|b| engine_regex_bytes::compile(&b.pattern)).collect();
+
+        group.bench_with_input("regex (pre-compiled)", &size_kib, |b, _| {
+            b.iter(|| {
+                for (benchmark, regex_compiled) in
+                    benchmarks.benchmarks.iter().zip(&regexes_compiled)
+                {
+                    for input in
+                        benchmark.inputs.match_.iter().chain(benchmark.inputs.no_match.iter())
+                    {
+                        criterion::black_box(engine_regex_bytes::captures_compiled(
+                            &regex_compiled,
+                            input.as_bytes(),
+                        ));
+                    }
+                }
+            });
+        });
+
+        group.bench_with_input("wildcard", &size_kib, |b, _| {
+            b.iter(|| {
+                for benchmark in &benchmarks.benchmarks {
+                    let pattern = &benchmark.pattern;
+
+                    for input in benchmark.inputs.match_.iter().chain(&benchmark.inputs.no_match) {
+                        criterion::black_box(engine_wildcard::captures(
+                            pattern.as_bytes(),
+                            input.as_bytes(),
+                        ));
+                    }
+                }
+            });
+        });
+
+        let wildcards_compiled: Vec<_> = benchmarks
+            .benchmarks
+            .iter()
+            .map(|b| engine_wildcard::compile(b.pattern.as_bytes()))
+            .collect();
+
+        group.bench_with_input("wildcard (pre-compiled)", &size_kib, |b, _| {
+            b.iter(|| {
+                for (benchmark, wildcard_compiled) in
+                    benchmarks.benchmarks.iter().zip(&wildcards_compiled)
+                {
+                    for input in
+                        benchmark.inputs.match_.iter().chain(benchmark.inputs.no_match.iter())
+                    {
+                        criterion::black_box(engine_wildcard::captures_compiled(
+                            &wildcard_compiled,
+                            input.as_bytes(),
+                        ));
+                    }
+                }
+            });
+        });
+    }
+
+    group.finish();
+}
+
 criterion_group!(
     benchmark,
-    benchmark_comparison_matches_bytes,
-    benchmark_wildcard_matches_bytes,
-    benchmark_comparison_captures_bytes,
-    benchmark_wildcard_captures_bytes,
+    benchmark_comparison_matches_bytes_backtrack_heavy,
+    benchmark_wildcard_matches_bytes_backtrack_heavy,
+    benchmark_comparison_captures_bytes_backtrack_heavy,
+    benchmark_wildcard_captures_bytes_backtrack_heavy,
+    benchmark_benchdata_comparison_matches,
+    benchmark_benchdata_comparison_captures,
 );
 criterion_main!(benchmark);
