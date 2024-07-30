@@ -323,13 +323,22 @@ fn read_benchmark(size_kib: usize) -> Benchmarks {
     toml::from_str(&benches).expect("failed to parse benchmark file")
 }
 
+fn is_short_bench() -> bool {
+    std::env::var("SHORT_BENCH").ok().map_or(false, |v| v == "1")
+}
+
 fn benchmark_benchdata_comparison_matches(c: &mut Criterion) {
     let mut group = c.benchmark_group("benchdata_comparison_matches");
 
-    group.sample_size(100);
-    group.measurement_time(Duration::from_secs(300));
+    let benchdata_sizes = match is_short_bench() {
+        true => &[1, 2, 4],
+        false => BENCHDATA_SIZES,
+    };
 
-    for &size_kib in BENCHDATA_SIZES {
+    group.sample_size(25);
+    group.measurement_time(Duration::from_secs(100));
+
+    for &size_kib in benchdata_sizes {
         let benchmarks = read_benchmark(size_kib);
 
         let throughput = benchmarks
@@ -453,10 +462,15 @@ fn benchmark_benchdata_comparison_matches(c: &mut Criterion) {
 fn benchmark_benchdata_comparison_captures(c: &mut Criterion) {
     let mut group = c.benchmark_group("benchdata_comparison_captures");
 
-    group.sample_size(100);
-    group.measurement_time(Duration::from_secs(300));
+    let benchdata_sizes = match is_short_bench() {
+        true => &[1, 2, 4],
+        false => BENCHDATA_SIZES,
+    };
 
-    for &size_kib in BENCHDATA_SIZES {
+    group.sample_size(25);
+    group.measurement_time(Duration::from_secs(100));
+
+    for &size_kib in benchdata_sizes {
         let benchmarks = read_benchmark(size_kib);
 
         let throughput = benchmarks
