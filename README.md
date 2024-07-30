@@ -39,6 +39,18 @@ let captures: Vec<&[u8]> = wildcard.captures("Lambic is a beer style!".as_bytes(
 assert_eq!(captures, ["Lambic".as_bytes(), "beer".as_bytes(), "!".as_bytes()]);
 ```
 
+## String matching
+
+For performance reasons `wildcard` does not match directly on strings, but it supports matching
+on slices of `char`s:
+
+```rust
+let p = "*foo?*bar".chars().collect::<Vec<_>>();
+let wildcard = Wildcard::new(&p).unwrap();
+
+assert!(wildcard.is_match(&"fooofooobar".chars().collect::<Vec<_>>()));
+```
+
 ## Matching customization
 
 With `wildcard` you can configure these properties of a wildcard:

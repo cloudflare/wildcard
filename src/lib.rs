@@ -49,6 +49,20 @@
 //! assert_eq!(captures, ["Lambic".as_bytes(), "beer".as_bytes(), "!".as_bytes()]);
 //! ```
 //!
+//! # String matching
+//!
+//! For performance reasons `wildcard` does not match directly on strings, but it supports matching
+//! on slices of `char`s:
+//!
+//! ```rust
+//! # use wildcard::Wildcard;
+//! #
+//! let p = "*foo?*bar".chars().collect::<Vec<_>>();
+//! let wildcard = Wildcard::new(&p).unwrap();
+//!
+//! assert!(wildcard.is_match(&"fooofooobar".chars().collect::<Vec<_>>()));
+//! ```
+//!
 //! # Matching customization
 //!
 //! With `wildcard` you can configure these properties of a wildcard:
@@ -119,6 +133,7 @@ impl WildcardSymbol for char {
         a.to_lowercase().eq(b.to_lowercase())
     }
 }
+
 #[derive(Clone)]
 struct WildcardMatchingConfig<S> {
     metasymbol_any: S,

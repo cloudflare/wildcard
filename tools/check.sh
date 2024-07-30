@@ -25,7 +25,7 @@ trap on_failure ERR
 echo 'Building:'
 cargo build --all-features --all-targets
 echo 'Testing:'
-cargo test  --all-features --all-targets --benches
+SHORT_BENCH=1 cargo test  --all-features --all-targets --benches
 
 # We test property-based tests will a much higher number of testcases. We need to compile this with the release profile,
 # otherwise this would be very slow.
