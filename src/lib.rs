@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![no_std]
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 // Note: If you change this remember to update `README.md`. To do so run `cargo rdme`.
 //! `wildcard` is a rust crate for wildcard matching.
@@ -72,10 +73,12 @@
 //! 3. Support for escaping can be disabled.
 //! 4. Support for case-insensitive matching.
 
-use std::borrow::Cow;
-use std::fmt::Debug;
-use std::ops::Range;
-// TODO maybe not use thiserror so we can make the crate nostd?
+extern crate alloc;
+
+use alloc::borrow::Cow;
+use alloc::vec::Vec;
+use core::fmt::Debug;
+use core::ops::Range;
 use thiserror::Error;
 
 /// Error representing an invalid [`Wildcard`] creation.
@@ -426,7 +429,7 @@ where
     pub fn parsed(&self) -> impl Iterator<Item = WildcardToken<S>> + '_ {
         let mut i = 0;
 
-        std::iter::from_fn(move || {
+        core::iter::from_fn(move || {
             if i >= self.pattern.len() {
                 None
             } else {
@@ -741,6 +744,9 @@ where
 #[cfg(test)]
 mod tests {
     use crate::{Wildcard, WildcardBuilder, WildcardError, WildcardToken};
+    use alloc::string::String;
+    use alloc::vec::Vec;
+    use alloc::{format, vec};
     use quickcheck::{Arbitrary, Gen};
     use quickcheck_macros::quickcheck;
 
@@ -750,6 +756,9 @@ mod tests {
 
     pub mod engine_regex_bytes {
         use crate::{Wildcard, WildcardToken};
+        use alloc::borrow::ToOwned;
+        use alloc::string::String;
+        use alloc::vec::Vec;
         use regex::bytes::{Regex, RegexBuilder};
 
         fn make_regex(pattern: &str, case_insensitive: bool) -> Regex {
@@ -766,7 +775,7 @@ mod tests {
                     }
                     WildcardToken::Symbol(s) => {
                         let slice = &[s];
-                        let s = std::str::from_utf8(slice).expect("invalid utf-8 symbol");
+                        let s = core::str::from_utf8(slice).expect("invalid utf-8 symbol");
                         regex_pattern.push_str(&regex::escape(s));
                     }
                 }
@@ -1392,7 +1401,7 @@ mod tests {
                 WildcardToken::MetasymbolAny | WildcardToken::MetasymbolOne => {
                     let fill = captures.next().expect("must be present");
 
-                    pattern_filled_in.push_str(std::str::from_utf8(fill).expect("invalid utf-8"));
+                    pattern_filled_in.push_str(core::str::from_utf8(fill).expect("invalid utf-8"));
                 }
                 WildcardToken::Symbol(b) => pattern_filled_in.push(char::from(b)),
             }
