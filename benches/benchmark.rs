@@ -15,6 +15,7 @@
 #![allow(missing_docs)]
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::missing_panics_doc)]
+#![allow(clippy::too_many_lines)]
 
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 use std::time::Duration;
@@ -316,9 +317,8 @@ struct Benchmarks {
 const BENCHDATA_SIZES: &[usize] = &[1, 2, 4, 8, 16, 32, 64, 128];
 
 fn read_benchmark(size_kib: usize) -> Benchmarks {
-    let benches =
-        std::fs::read_to_string(format!("benches/benchdata/benchmarks_{}k.toml", size_kib))
-            .expect("failed to read benchmark data");
+    let benches = std::fs::read_to_string(format!("benches/benchdata/benchmarks_{size_kib}k.toml"))
+        .expect("failed to read benchmark data");
 
     toml::from_str(&benches).expect("failed to parse benchmark file")
 }
@@ -357,7 +357,7 @@ fn benchmark_benchdata_comparison_matches(c: &mut Criterion) {
 
                     for input in benchmark.inputs.match_.iter().chain(&benchmark.inputs.no_match) {
                         criterion::black_box(engine_regex_bytes::matches(
-                            &pattern,
+                            pattern,
                             input.as_bytes(),
                         ));
                     }
@@ -377,7 +377,7 @@ fn benchmark_benchdata_comparison_matches(c: &mut Criterion) {
                         benchmark.inputs.match_.iter().chain(benchmark.inputs.no_match.iter())
                     {
                         criterion::black_box(engine_regex_bytes::matches_compiled(
-                            &regex_compiled,
+                            regex_compiled,
                             input.as_bytes(),
                         ));
                     }
@@ -391,7 +391,7 @@ fn benchmark_benchdata_comparison_matches(c: &mut Criterion) {
                     let pattern = &benchmark.pattern;
 
                     for input in benchmark.inputs.match_.iter().chain(&benchmark.inputs.no_match) {
-                        criterion::black_box(engine_wildmatch::matches(&pattern, input));
+                        criterion::black_box(engine_wildmatch::matches(pattern, input));
                     }
                 }
             });
@@ -409,7 +409,7 @@ fn benchmark_benchdata_comparison_matches(c: &mut Criterion) {
                         benchmark.inputs.match_.iter().chain(benchmark.inputs.no_match.iter())
                     {
                         criterion::black_box(engine_wildmatch::matches_compiled(
-                            &wildmatch_compiled,
+                            wildmatch_compiled,
                             input,
                         ));
                     }
@@ -447,7 +447,7 @@ fn benchmark_benchdata_comparison_matches(c: &mut Criterion) {
                         benchmark.inputs.match_.iter().chain(benchmark.inputs.no_match.iter())
                     {
                         criterion::black_box(engine_wildcard::matches_compiled(
-                            &wildcard_compiled,
+                            wildcard_compiled,
                             input.as_bytes(),
                         ));
                     }
@@ -489,7 +489,7 @@ fn benchmark_benchdata_comparison_captures(c: &mut Criterion) {
 
                     for input in benchmark.inputs.match_.iter().chain(&benchmark.inputs.no_match) {
                         criterion::black_box(engine_regex_bytes::captures(
-                            &pattern,
+                            pattern,
                             input.as_bytes(),
                         ));
                     }
@@ -509,7 +509,7 @@ fn benchmark_benchdata_comparison_captures(c: &mut Criterion) {
                         benchmark.inputs.match_.iter().chain(benchmark.inputs.no_match.iter())
                     {
                         criterion::black_box(engine_regex_bytes::captures_compiled(
-                            &regex_compiled,
+                            regex_compiled,
                             input.as_bytes(),
                         ));
                     }
@@ -547,7 +547,7 @@ fn benchmark_benchdata_comparison_captures(c: &mut Criterion) {
                         benchmark.inputs.match_.iter().chain(benchmark.inputs.no_match.iter())
                     {
                         criterion::black_box(engine_wildcard::captures_compiled(
-                            &wildcard_compiled,
+                            wildcard_compiled,
                             input.as_bytes(),
                         ));
                     }

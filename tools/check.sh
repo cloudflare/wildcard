@@ -16,39 +16,93 @@ function on_failure {
     echo -e "${RED}Whoopsie-daisy: something failed!$NC" >&2
 }
 
-assert_installed "cargo-fmt"
-assert_installed "cargo-clippy"
-assert_installed "cargo-rdme"
+assert_installed "cargo"
 
 trap on_failure ERR
 
-echo 'Building:'
-cargo build --all-features --all-targets
-echo 'Testing:'
-SHORT_BENCH=1 cargo test  --all-features --all-targets --benches
+function check_basic {
+    echo 'Building:'
+    cargo build --features fatal-warnings --all-targets
+	echo 'Testing:'
+	SHORT_BENCH=1 cargo test  --all-features --all-targets --benches
+	# We test property-based tests will a much higher number of testcases. We need to compile this with the release profile,
+	# otherwise this would be very slow.
+	echo 'Testing property-based tests for longer:'
+	QUICKCHECK_TESTS=200000 cargo test --all-features --release property_
+    # Weirdly, the `cargo test ... --all-targets ...` above does not run the tests in the documentation, so we run the
+    # doc tests like this.
+    # See https://github.com/rust-lang/cargo/issues/6669.
+    echo 'Testing doc:'
+    cargo test  --features fatal-warnings --doc
+    echo 'Checking the benchmarks:'
+    cargo bench --features fatal-warnings -- --test
+    echo 'Checking documentation:'
+    cargo doc   --features fatal-warnings --no-deps
+}
 
-# We test property-based tests will a much higher number of testcases. We need to compile this with the release profile,
-# otherwise this would be very slow.
-echo 'Testing property-based tests for longer:'
-QUICKCHECK_TESTS=200000 cargo test --all-features --release property_
+function check_doc_url_links {
+    assert_installed "cargo-deadlinks"
 
-# Weirdly, the `cargo test ... --all-targets ...` above does not run the tests in the documentation, so we run the
-# doc tests like this.
-# See https://github.com/rust-lang/cargo/issues/6669.
-echo 'Testing doc:'
-cargo test  --all-features --doc
-echo 'Checking documentation:'
-cargo doc   --all-features --no-deps --document-private-items
+    echo 'Checking doc url links:'
+    cargo deadlinks
+}
 
-echo 'Checking clippy:'
-cargo clippy --all-features --all-targets
+function check_unused_deps {
+    assert_installed "cargo-machete"
 
-echo 'Checking packaging:'
-cargo package --allow-dirty
-echo 'Checking code style:'
-cargo fmt -- --check
-echo 'Checking readme:'
-cargo rdme --check
+    echo 'Checking unused dependencies:'
+    cargo machete
+}
+
+function check_packaging {
+    echo 'Checking packaging:'
+    cargo package --allow-dirty
+}
+
+function check_fmt {
+    assert_installed "cargo-fmt"
+
+    echo 'Checking code format:'
+    cargo fmt -- --check
+}
+
+function check_toml_fmt {
+    assert_installed "taplo"
+
+    echo 'Checking toml format:'
+    taplo fmt --check
+}
+
+function check_readme {
+    assert_installed "cargo-rdme"
+
+    echo 'Checking readme:'
+	cargo rdme --check
+}
+
+function check_msrv {
+    assert_installed "cargo-msrv"
+
+    echo 'Checking the minimum supported rust version:'
+    cargo msrv verify
+}
+
+function check_clippy {
+    assert_installed "cargo-clippy"
+
+    echo 'Checking with clippy:'
+    cargo clippy --all-targets -- -D warnings
+}
+
+to_run=(basic doc_url_links unused_deps packaging fmt toml_fmt readme msrv clippy)
+
+if [ $# -ge 1 ]; then
+    to_run=("$@")
+fi
+
+for check in "${to_run[@]}"; do
+    check_$check
+done
 
 echo
 echo -e "${GREEN}Everything looks lovely!$NC"

@@ -9,8 +9,8 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4.7"
-wildcard = { path = ".." }
 regex = "1.10.5"
+wildcard = { path = ".." }
 
 [profile.release]
 debug = true
