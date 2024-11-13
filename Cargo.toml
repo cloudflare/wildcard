@@ -12,15 +12,9 @@ repository = "https://github.com/cloudflare/wildcard"
 documentation = "https://docs.rs/wildcard"
 readme = "README.md"
 
-keywords = [
-    "wildcard",
-    "matching",
-]
+keywords = ["wildcard", "matching"]
 
-categories = [
-    "text-processing",
-    "algorithms",
-]
+categories = ["text-processing", "algorithms"]
 
 license = "Apache-2.0"
 
@@ -40,12 +34,12 @@ thiserror = "2.0.3"
 
 [dev-dependencies]
 criterion = "0.5.1"
-regex = "1.10.5"
-wildmatch = "2.3.4"
-toml = "0.8.14"
-serde = "1.0.203"
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"
+regex = "1.10.5"
+serde = "1.0.203"
+toml = "0.8.14"
+wildmatch = "2.3.4"
 
 [features]
 fatal-warnings = []
@@ -65,8 +59,8 @@ missing-docs = "warn"
 
 [lints.clippy]
 all = { level = "warn", priority = -1 }
-pedantic = { level = "warn", priority = -1 }
 correctness = { level = "deny", priority = 1 }
+pedantic = { level = "warn", priority = -1 }
 
 explicit-deref-methods = "allow"
 if-not-else = "allow"
