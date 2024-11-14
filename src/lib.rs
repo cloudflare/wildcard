@@ -77,7 +77,7 @@ extern crate alloc;
 
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
-use core::fmt::Debug;
+use core::fmt::{Debug, Display, Formatter};
 use core::ops::Range;
 use thiserror::Error;
 
@@ -741,6 +741,19 @@ where
     pattern_index >= pattern_len
 }
 
+impl<'a, S> Debug for Wildcard<'a, S>
+where
+    S: WildcardSymbol + Display,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        for s in self.pattern.iter() {
+            Display::fmt(s, f)?;
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{Wildcard, WildcardBuilder, WildcardError, WildcardToken};
@@ -1143,6 +1156,14 @@ mod tests {
         assert_eq!(wildcard.captures(&['ω', 'x']), None);
         assert_eq!(wildcard.captures(&['Ω', 'x', 'X', 'Δ']), Some(vec![&['x', 'X'] as &[char]]));
         assert_eq!(wildcard.captures(&['ω', 'ω', 'Ω', 'Δ']), Some(vec![&['ω', 'Ω'] as &[char]]));
+    }
+
+    #[test]
+    fn test_debug_format() {
+        let pattern = r"a*\*?\?".chars().collect::<Vec<char>>();
+        let wildcard = WildcardBuilder::new(&pattern).build().expect("invalid wildcard");
+
+        assert_eq!(format!("{wildcard:?}"), r"a*\*?\?");
     }
 
     #[derive(Clone, Debug)]
