@@ -741,7 +741,7 @@ where
     pattern_index >= pattern_len
 }
 
-impl<'a, S> Debug for Wildcard<'a, S>
+impl<S> Debug for Wildcard<'_, S>
 where
     S: WildcardSymbol + Display,
 {
